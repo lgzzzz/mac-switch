@@ -1,0 +1,9 @@
+# 构建产物
+ds-window-switch
+DSWindowSwitch.app/
+.modulecache/
+.tmp/
+
+# IDE / 系统文件(不纳入版本控制)
+.idea/
+.DS_Store
