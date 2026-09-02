@@ -16,7 +16,7 @@
 
 ```bash
 # 进入本仓库目录后执行(脚本内部自行定位自身目录,路径均为相对路径,仓库放哪都能用)
-cd ~/dsh-switch
+cd ~/mac-switch
 ./install.sh
 ```
 

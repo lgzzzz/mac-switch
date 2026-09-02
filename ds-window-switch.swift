@@ -45,7 +45,7 @@ func resolvePath(_ p: String) -> String {
 var ideaBundleID      = "com.jetbrains.intellij"
 var harnessBundleID   = "dsh-electron"
 // DeepSeek Harness.app 的默认位置:相对仓库根解析(仓库的上一级,即与仓库目录同级,
-// 例如仓库在 ~/dsh-switch 时默认 ~/DeepSeek Harness.app)。用 --harness-path 可覆盖。
+// 例如仓库在 ~/mac-switch 时默认 ~/DeepSeek Harness.app)。用 --harness-path 可覆盖。
 var harnessAppPath    = resolvePath("../DeepSeek Harness.app")
 var switchKeycode: Int64 = 48   // kVK_Tab;其他键可查 HIToolbox 的 kVK_* 常量
 var switchModifier: CGEventFlags = .maskAlternate   // 默认 alt(option);可用 --modifier 改为 ctrl/cmd/shift
