@@ -1,17 +1,25 @@
 #!/bin/bash
-# 安装 ds-window-switch:
+# 安装 mac-switch:
 #   1. 编译 Swift 程序
-#   2. 打包为 DSWindowSwitch.app(带 bundle,授权弹窗可可靠出现)
-#   3. 注册 LaunchAgent:登录后自动通过 open 启动该 app
+#   2. 校验 config.json(应用列表与热键都在这里配置)
+#   3. 打包为 MacSwitch.app(带 bundle,授权弹窗可可靠出现)
+#   4. 注册 LaunchAgent:登录后自动通过 open 启动该 app
+# 若检测到旧版本(ds-window-switch / DSWindowSwitch.app / ds.window.switch),会一并清理。
 set -euo pipefail
 cd "$(dirname "$0")"
 
-SWIFT=ds-window-switch.swift
-BIN="$PWD/ds-window-switch"
-APP_NAME=DSWindowSwitch
+SWIFT=mac-switch.swift
+BIN="$PWD/mac-switch"
+APP_NAME=MacSwitch
 APP="$PWD/$APP_NAME.app"
-LABEL=ds.window.switch
+LABEL=com.macswitch.agent
 PLIST="$HOME/Library/LaunchAgents/$LABEL.plist"
+
+# 旧版本(项目原名 ds-window-switch)的标识,用于迁移清理
+OLD_APP_NAME=DSWindowSwitch
+OLD_APP="$PWD/$OLD_APP_NAME.app"
+OLD_LABEL=ds.window.switch
+OLD_PLIST="$HOME/Library/LaunchAgents/$OLD_LABEL.plist"
 
 echo "==> 编译 $SWIFT ..."
 # 优先用 Xcode 自带工具链(部分机器上 CommandLineTools 的 SDK 与 swiftc 版本不匹配)
@@ -20,23 +28,33 @@ if [ -d /Applications/Xcode.app/Contents/Developer ]; then
 fi
 xcrun swiftc -O "$SWIFT" -o "$BIN"
 
+echo "==> 校验配置 config.json ..."
+if [ ! -f config.json ]; then
+  echo "❌ 缺少 config.json:请先创建配置(至少要有 apps 列表),格式见 README.md;" >&2
+  echo "   若只是被误删,可用 git checkout config.json 恢复仓库里的默认配置。" >&2
+  exit 1
+fi
+# 校验失败时程序会打印具体原因到 stderr 并以非 0 退出,set -e 会让脚本在此中止
+"$BIN" --print-config >/dev/null
+echo "    配置有效。"
+
 echo "==> 打包 $APP_NAME.app ..."
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS"
-cp "$BIN" "$APP/Contents/MacOS/ds-window-switch"
+cp "$BIN" "$APP/Contents/MacOS/mac-switch"
 cat > "$APP/Contents/Info.plist" <<'EOF'
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
   <key>CFBundleIdentifier</key>
-  <string>com.dshswitch.windowswitch</string>
+  <string>com.macswitch.windowswitch</string>
   <key>CFBundleName</key>
-  <string>DSWindowSwitch</string>
+  <string>MacSwitch</string>
   <key>CFBundleDisplayName</key>
-  <string>DSWindowSwitch</string>
+  <string>MacSwitch</string>
   <key>CFBundleExecutable</key>
-  <string>ds-window-switch</string>
+  <string>mac-switch</string>
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>CFBundleVersion</key>
@@ -54,6 +72,13 @@ EOF
 echo "==> ad-hoc 签名(保证 TCC 权限身份稳定)..."
 codesign --force --sign - "$BIN"
 codesign --force --sign - "$APP"
+
+echo "==> 清理旧版本($OLD_APP_NAME / $OLD_LABEL)..."
+pkill -x ds-window-switch 2>/dev/null || true
+launchctl bootout "gui/$(id -u)/$OLD_LABEL" 2>/dev/null || true
+launchctl unload "$OLD_PLIST" 2>/dev/null || true
+rm -f "$OLD_PLIST"
+rm -rf "$OLD_APP"
 
 echo "==> 写入 LaunchAgent: $LABEL(通过 open 启动 $APP_NAME.app)..."
 mkdir -p "$HOME/Library/LaunchAgents"
@@ -73,31 +98,37 @@ cat > "$PLIST" <<EOF
   <key>RunAtLoad</key>
   <true/>
   <key>StandardOutPath</key>
-  <string>/tmp/$LABEL.out.log</string>
+  <string>/tmp/mac-switch.out.log</string>
   <key>StandardErrorPath</key>
-  <string>/tmp/$LABEL.err.log</string>
+  <string>/tmp/mac-switch.err.log</string>
 </dict>
 </plist>
 EOF
 
 # 杀掉旧进程(裸二进制或旧 app),重载服务
-pkill -x ds-window-switch 2>/dev/null || true
+pkill -x mac-switch 2>/dev/null || true
+launchctl bootout "gui/$(id -u)/$LABEL" 2>/dev/null || true
 launchctl unload "$PLIST" 2>/dev/null || true
 launchctl load "$PLIST"
 
 sleep 2
-if pgrep -f "$APP/Contents/MacOS/ds-window-switch" >/dev/null 2>&1; then
+if pgrep -f "$APP/Contents/MacOS/mac-switch" >/dev/null 2>&1; then
   echo
-  echo "✅ $APP_NAME 已在运行,且权限已就绪。去 IDEA 里按 alt+tab 试试。"
-  echo "   程序日志: /tmp/ds.window.switch.app.out.log /tmp/ds.window.switch.app.err.log"
+  echo "✅ $APP_NAME 已在运行。当前生效的配置:"
+  "$BIN" --print-config | sed 's/^/   /'
+  echo
+  echo "   按上面 hotkey.display 组合键即可在 apps 列表间循环切换。"
+  echo "   程序日志: /tmp/mac-switch.app.out.log /tmp/mac-switch.app.err.log"
 else
   echo
   echo "⚠️ 程序启动后退出 —— 首次安装需要依次授予两个权限(每次授权后需要重启它):"
   echo "   1) 允许屏幕上的「输入监控」弹窗(应用名: $APP_NAME),然后执行:"
   echo "        launchctl kickstart -k gui/\$(id -u)/$LABEL"
   echo "   2) 再允许「辅助功能」弹窗,再次执行上面的 kickstart。"
-  echo "   完成后去 IDEA 里按 alt+tab 验证。"
   echo
-  echo "   日志: /tmp/ds.window.switch.app.out.log /tmp/ds.window.switch.app.err.log"
+  echo "   本项目由 ds-window-switch 改名而来,若你给旧版授权过,需要给 $APP_NAME 重新授权一次;"
+  echo "   并可在 系统设置 > 隐私与安全性 里移除旧的 DSWindowSwitch / ds-window-switch 条目。"
+  echo
+  echo "   日志: /tmp/mac-switch.app.out.log /tmp/mac-switch.app.err.log"
   echo "   若弹窗没有出现: 系统设置 > 隐私与安全性 > 输入监控 / 辅助功能 中手动添加 $APP"
 fi
