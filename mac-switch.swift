@@ -201,8 +201,8 @@ let configTemplate = """
 {
   "hotkey": { "modifier": "alt", "keycode": 48 },
   "apps": [
-    { "name": "IntelliJ IDEA", "bundleId": "com.jetbrains.intellij" },
-    { "name": "DeepSeek Harness", "bundleId": "dsh-electron", "path": "../DeepSeek Harness.app" }
+    { "name": "Safari", "bundleId": "com.apple.Safari" },
+    { "name": "Notes", "path": "/System/Applications/Notes.app" }
   ]
 }
 """

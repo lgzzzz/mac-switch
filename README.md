@@ -11,7 +11,7 @@
 - 前台应用**在** `apps` 列表里 → 激活它的**下一个**(到末尾则回到第 0 个);
 - 前台应用**不在**列表里 → 激活 `fallbackIndex` 指定的那个(默认第 0 个)。
 
-以 `apps = [IntelliJ IDEA, DeepSeek Harness]`、`fallbackIndex = 1` 为例:在 IDEA 按 → 跳 Harness;在 Harness 按 → 跳 IDEA;在别的应用按 → 先跳 Harness。
+以 `apps = [Safari, Notes]`、`fallbackIndex = 1` 为例:在 Safari 按 → 跳 Notes;在 Notes 按 → 跳 Safari;在别的应用按 → 先跳 Notes。
 
 列表里放 3 个及以上应用时就是标准的循环轮换。
 
@@ -31,7 +31,7 @@
 cp config.example.json config.json   # 首次使用;./install.sh 在你没有 config.json 时也会自动生成
 ```
 
-下面是一个完整例子(切换到 IntelliJ IDEA 与 DeepSeek Harness):
+下面是一个完整例子(在 Safari 与 Notes 之间切换):
 
 ```json
 {
@@ -39,10 +39,10 @@ cp config.example.json config.json   # 首次使用;./install.sh 在你没有 co
     "modifier": "alt",
     "keycode": 48
   },
-  "fallbackIndex": 1,
+  "fallbackIndex": 0,
   "apps": [
-    { "name": "IntelliJ IDEA", "bundleId": "com.jetbrains.intellij" },
-    { "name": "DeepSeek Harness", "bundleId": "dsh-electron", "path": "../DeepSeek Harness.app" }
+    { "name": "Safari", "bundleId": "com.apple.Safari" },
+    { "name": "Notes", "path": "/System/Applications/Notes.app" }
   ]
 }
 ```
@@ -148,15 +148,6 @@ launchctl kickstart -k gui/$(id -u)/com.macswitch.agent
 ```
 
 会停掉进程、删除 LaunchAgent 与 `MacSwitch.app`,但**保留 `config.json`**。
-
-## 从 ds-window-switch 迁移
-
-本项目原名为 `ds-window-switch`,只支持在 IntelliJ IDEA 与 DeepSeek Harness 之间切换。改名与通用化后:
-
-- 老的 `--idea` / `--harness` / `--harness-path` 参数已移除,改为在 `config.json` 的 `apps` 里配置(字段与示例见 [config.example.json](config.example.json))。
-- 另外注意:旧版默认的 `dsh-electron` 在实际机器上可能根本解析不到应用 —— 用 Chrome「创建快捷方式」生成的 `DeepSeek Harness.app` 是 app-mode 外壳,其 bundleId 形如 `com.google.Chrome.app.<app_id>`。用 `plutil -extract CFBundleIdentifier raw -o - "$HOME/DeepSeek Harness.app/Contents/Info.plist"` 可读回真实值。
-- 二进制 / 应用 / LaunchAgent 依次改名为 `mac-switch`、`MacSwitch.app`、`com.macswitch.agent`。`install.sh` 会自动清理旧版进程、`ds.window.switch` 服务与 `DSWindowSwitch.app`。
-- **权限需要重新授予**:TCC 权限绑定签名身份,名称变化等于一个新程序。到 系统设置 里给 `MacSwitch` 重新勾选「输入监控」「辅助功能」,并移除旧的 `DSWindowSwitch` 条目。
 
 ## 常见问题
 

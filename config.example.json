@@ -15,13 +15,13 @@
   "apps": [
     {
       "_comment": "最常用的写法:只填 bundleId,由 LaunchServices 定位应用。",
-      "name": "IntelliJ IDEA",
-      "bundleId": "com.jetbrains.intellij"
-    },
-    {
-      "_comment": "猜不到 bundleId 时,可以只填 path(程序会从 .app 里读出 CFBundleIdentifier):{ \"name\": \"某应用\", \"path\": \"/Applications/某应用.app\" }。",
       "name": "Safari",
       "bundleId": "com.apple.Safari"
+    },
+    {
+      "_comment": "bundleId 不好找时也可以只填 path:程序会从 .app 的 Info.plist 里读出 CFBundleIdentifier。",
+      "name": "Notes",
+      "path": "/System/Applications/Notes.app"
     }
   ],
 

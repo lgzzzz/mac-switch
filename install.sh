@@ -4,7 +4,6 @@
 #   2. 校验 config.json(应用列表与热键都在这里配置)
 #   3. 打包为 MacSwitch.app(带 bundle,授权弹窗可可靠出现)
 #   4. 注册 LaunchAgent:登录后自动通过 open 启动该 app
-# 若检测到旧版本(ds-window-switch / DSWindowSwitch.app / ds.window.switch),会一并清理。
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -14,12 +13,6 @@ APP_NAME=MacSwitch
 APP="$PWD/$APP_NAME.app"
 LABEL=com.macswitch.agent
 PLIST="$HOME/Library/LaunchAgents/$LABEL.plist"
-
-# 旧版本(项目原名 ds-window-switch)的标识,用于迁移清理
-OLD_APP_NAME=DSWindowSwitch
-OLD_APP="$PWD/$OLD_APP_NAME.app"
-OLD_LABEL=ds.window.switch
-OLD_PLIST="$HOME/Library/LaunchAgents/$OLD_LABEL.plist"
 
 echo "==> 编译 $SWIFT ..."
 # 优先用 Xcode 自带工具链(部分机器上 CommandLineTools 的 SDK 与 swiftc 版本不匹配)
@@ -55,7 +48,7 @@ cat > "$APP/Contents/Info.plist" <<'EOF'
 <plist version="1.0">
 <dict>
   <key>CFBundleIdentifier</key>
-  <string>com.macswitch.windowswitch</string>
+  <string>com.macswitch.app</string>
   <key>CFBundleName</key>
   <string>MacSwitch</string>
   <key>CFBundleDisplayName</key>
@@ -79,13 +72,6 @@ EOF
 echo "==> ad-hoc 签名(保证 TCC 权限身份稳定)..."
 codesign --force --sign - "$BIN"
 codesign --force --sign - "$APP"
-
-echo "==> 清理旧版本($OLD_APP_NAME / $OLD_LABEL)..."
-pkill -x ds-window-switch 2>/dev/null || true
-launchctl bootout "gui/$(id -u)/$OLD_LABEL" 2>/dev/null || true
-launchctl unload "$OLD_PLIST" 2>/dev/null || true
-rm -f "$OLD_PLIST"
-rm -rf "$OLD_APP"
 
 echo "==> 写入 LaunchAgent: $LABEL(通过 open 启动 $APP_NAME.app)..."
 mkdir -p "$HOME/Library/LaunchAgents"
@@ -112,7 +98,7 @@ cat > "$PLIST" <<EOF
 </plist>
 EOF
 
-# 杀掉旧进程(裸二进制或旧 app),重载服务
+# 杀掉已在运行的进程(裸二进制或 app),重载服务
 pkill -x mac-switch 2>/dev/null || true
 launchctl bootout "gui/$(id -u)/$LABEL" 2>/dev/null || true
 launchctl unload "$PLIST" 2>/dev/null || true
@@ -132,9 +118,6 @@ else
   echo "   1) 允许屏幕上的「输入监控」弹窗(应用名: $APP_NAME),然后执行:"
   echo "        launchctl kickstart -k gui/\$(id -u)/$LABEL"
   echo "   2) 再允许「辅助功能」弹窗,再次执行上面的 kickstart。"
-  echo
-  echo "   本项目由 ds-window-switch 改名而来,若你给旧版授权过,需要给 $APP_NAME 重新授权一次;"
-  echo "   并可在 系统设置 > 隐私与安全性 里移除旧的 DSWindowSwitch / ds-window-switch 条目。"
   echo
   echo "   日志: /tmp/mac-switch.app.out.log /tmp/mac-switch.app.err.log"
   echo "   若弹窗没有出现: 系统设置 > 隐私与安全性 > 输入监控 / 辅助功能 中手动添加 $APP"

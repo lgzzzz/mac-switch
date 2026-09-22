@@ -4,10 +4,6 @@ MacSwitch.app/
 .modulecache/
 .tmp/
 
-# 旧版本(项目原名 ds-window-switch)的产物
-ds-window-switch
-DSWindowSwitch.app/
-
 # 本地私有配置(每台机器的应用/路径不同),模板见 config.example.json
 config.json
 
