@@ -1,0 +1,30 @@
+{
+  "_comment": "mac-switch 配置模板。复制为 config.json 后按需修改(config.json 已被 .gitignore 忽略,不会进版本库):cp config.example.json config.json",
+  "_comment_paths": "apps[].path 可省略(仅按 bundleId 查找);相对路径按「本配置文件所在目录」解析,也支持 ~/ 与绝对路径。",
+
+  "hotkey": {
+    "_comment": "modifier 可为字符串(alt)或数组([\"alt\",\"shift\"]);keycode 是 macOS 虚拟键码,48 = Tab、49 = 空格、36 = Return、53 = Esc。修饰键必须完全匹配:配 alt 时多按 ctrl/cmd/shift 不会触发。",
+    "modifier": "alt",
+    "keycode": 48
+  },
+
+  "_comment_fallbackIndex": "前台应用不在 apps 里时切到第几个应用(从 0 开始)。",
+  "fallbackIndex": 0,
+
+  "_comment_apps": "列表顺序即循环顺序:A → B → C → 回到 A。至少要有一个应用;只配一个则循环没有变化。",
+  "apps": [
+    {
+      "_comment": "最常用的写法:只填 bundleId,由 LaunchServices 定位应用。",
+      "name": "IntelliJ IDEA",
+      "bundleId": "com.jetbrains.intellij"
+    },
+    {
+      "_comment": "猜不到 bundleId 时,可以只填 path(程序会从 .app 里读出 CFBundleIdentifier):{ \"name\": \"某应用\", \"path\": \"/Applications/某应用.app\" }。",
+      "name": "Safari",
+      "bundleId": "com.apple.Safari"
+    }
+  ],
+
+  "_comment_chrome_app": "注意:用 Chrome「创建快捷方式 / 安装为应用」生成的 .app 是 app_mode_loader 外壳,它的 bundleId 是 Chrome 生成的 com.google.Chrome.app.<app_id>,而不是应用自己的名字。查法:plutil -extract CFBundleIdentifier raw -o - \"$HOME/Some App.app/Contents/Info.plist\"",
+  "_comment_lookup": "其他查 bundleId 的方式:osascript -e 'id of app \"Safari\"' 或 mdls -name kMDItemCFBundleIdentifier -r /Applications/Xcode.app"
+}

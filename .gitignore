@@ -8,6 +8,9 @@ MacSwitch.app/
 ds-window-switch
 DSWindowSwitch.app/
 
+# 本地私有配置(每台机器的应用/路径不同),模板见 config.example.json
+config.json
+
 # IDE / 系统文件(不纳入版本控制)
 .idea/
 .DS_Store

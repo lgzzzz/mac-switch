@@ -30,9 +30,16 @@ xcrun swiftc -O "$SWIFT" -o "$BIN"
 
 echo "==> 校验配置 config.json ..."
 if [ ! -f config.json ]; then
-  echo "❌ 缺少 config.json:请先创建配置(至少要有 apps 列表),格式见 README.md;" >&2
-  echo "   若只是被误删,可用 git checkout config.json 恢复仓库里的默认配置。" >&2
-  exit 1
+  if [ -f config.example.json ]; then
+    cp config.example.json config.json
+    echo "    未找到 config.json,已从 config.example.json 生成一份模板。"
+    echo "    ⚠️ 模板里的 apps 只是示例,请编辑 config.json 改成你要切换的应用,然后重启服务:"
+    echo "        launchctl kickstart -k gui/\$(id -u)/$LABEL"
+  else
+    echo "❌ 缺少 config.json,也找不到 config.example.json;" >&2
+    echo "   请创建 config.json(至少要有 apps 列表),格式见 README.md。" >&2
+    exit 1
+  fi
 fi
 # 校验失败时程序会打印具体原因到 stderr 并以非 0 退出,set -e 会让脚本在此中止
 "$BIN" --print-config >/dev/null

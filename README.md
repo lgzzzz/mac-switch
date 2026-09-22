@@ -11,7 +11,7 @@
 - 前台应用**在** `apps` 列表里 → 激活它的**下一个**(到末尾则回到第 0 个);
 - 前台应用**不在**列表里 → 激活 `fallbackIndex` 指定的那个(默认第 0 个)。
 
-以默认配置 `[IntelliJ IDEA, DeepSeek Harness]`、`fallbackIndex = 1` 为例:在 IDEA 按 → 跳 Harness;在 Harness 按 → 跳 IDEA;在别的应用按 → 先跳 Harness(与旧版 ds-window-switch 的行为一致)。
+以 `apps = [IntelliJ IDEA, DeepSeek Harness]`、`fallbackIndex = 1` 为例:在 IDEA 按 → 跳 Harness;在 Harness 按 → 跳 IDEA;在别的应用按 → 先跳 Harness。
 
 列表里放 3 个及以上应用时就是标准的循环轮换。
 
@@ -24,6 +24,14 @@
 ## 配置
 
 配置文件默认是**仓库根目录下的 `config.json`**,也可以用 `--config <路径>` 指定别处。
+
+`config.json` 是**本地私有配置**(每台机器的应用与路径不同),已被 `.gitignore` 忽略、不进版本库。仓库里跟踪的是模板 [config.example.json](config.example.json):
+
+```bash
+cp config.example.json config.json   # 首次使用;./install.sh 在你没有 config.json 时也会自动生成
+```
+
+下面是一个完整例子(切换到 IntelliJ IDEA 与 DeepSeek Harness):
 
 ```json
 {
@@ -52,7 +60,7 @@
 说明:
 
 - 修饰键必须**完全匹配**:配置 `"alt"` 时,多按 ctrl/cmd/shift 的组合不会触发(保持"纯 option+tab",不抢系统/应用的组合键)。
-- JSON 不支持注释;未知字段会被忽略,可以用 `"_comment"`、`"_comment_paths"` 之类的字段写备注(仓库里的默认配置就是这么做的)。
+- JSON 不支持注释;未知字段会被忽略,可以用 `"_comment"`、`"_comment_paths"` 之类的字段写备注(`config.example.json` 就是这么写的)。
 - `path` 存在时如果该 `.app` 读不出 bundle id,而 `bundleId` 又为空,程序会在启动时报错并指出是哪个 `apps[i]`。
 
 ### 换个应用 / 多个应用
@@ -86,7 +94,7 @@ cd ~/mac-switch
 ./install.sh
 ```
 
-install.sh 会:编译 → 校验 `config.json` → 打包为 `MacSwitch.app`(带 bundle,保证授权弹窗可靠出现)→ ad-hoc 签名 → 注册 LaunchAgent(`com.macswitch.agent`)并通过 `open` 启动该 app。
+install.sh 会:编译 → 校验 `config.json`(没有就从 `config.example.json` 生成) → 打包为 `MacSwitch.app`(带 bundle,保证授权弹窗可靠出现)→ ad-hoc 签名 → 注册 LaunchAgent(`com.macswitch.agent`)并通过 `open` 启动该 app。
 
 **首次运行需要依次授予两个权限**(每次授权后重启它一次):
 
@@ -145,7 +153,8 @@ launchctl kickstart -k gui/$(id -u)/com.macswitch.agent
 
 本项目原名为 `ds-window-switch`,只支持在 IntelliJ IDEA 与 DeepSeek Harness 之间切换。改名与通用化后:
 
-- 老的 `--idea` / `--harness` / `--harness-path` 参数已移除,改为在 `config.json` 的 `apps` 里配置。仓库自带的默认配置仍复刻了原来的两个应用与切换顺序。
+- 老的 `--idea` / `--harness` / `--harness-path` 参数已移除,改为在 `config.json` 的 `apps` 里配置(字段与示例见 [config.example.json](config.example.json))。
+- 另外注意:旧版默认的 `dsh-electron` 在实际机器上可能根本解析不到应用 —— 用 Chrome「创建快捷方式」生成的 `DeepSeek Harness.app` 是 app-mode 外壳,其 bundleId 形如 `com.google.Chrome.app.<app_id>`。用 `plutil -extract CFBundleIdentifier raw -o - "$HOME/DeepSeek Harness.app/Contents/Info.plist"` 可读回真实值。
 - 二进制 / 应用 / LaunchAgent 依次改名为 `mac-switch`、`MacSwitch.app`、`com.macswitch.agent`。`install.sh` 会自动清理旧版进程、`ds.window.switch` 服务与 `DSWindowSwitch.app`。
 - **权限需要重新授予**:TCC 权限绑定签名身份,名称变化等于一个新程序。到 系统设置 里给 `MacSwitch` 重新勾选「输入监控」「辅助功能」,并移除旧的 `DSWindowSwitch` 条目。
 
